@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${content.title}</title>
+    <esi:include src="/head.html" onerror="continue"/>
+</head>
+<body>
+  <!--  header -->
+  <header><esi:include src="/header.plain.html" onerror="continue"/></header>
+  <!--  main content -->
+  <main>${content.document.body}</main>
+  <!--  footer -->
+  <footer><esi:include src="/footer.plain.html"  onerror="continue"/></footer>
+</body>
+</html>
