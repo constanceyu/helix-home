@@ -1,4 +1,4 @@
-# The Helix Manifesto
+# The Helix Home Index
 
 The Helix PACT is:
 
