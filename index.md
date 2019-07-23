@@ -1,12 +1,8 @@
-![Helix](/helix_logo_dark.png "") Home
+# The Helix Manifesto
 
-[&#9776;](#menu)
+The Helix PACT is:
 
----
-
-[&times;](#)
-- [Home](/README.md)
-- [Getting Started](/getting-started.md)
-- [Hackathons](/hackathons/README.md)
-- [Manifesto](/manifesto.md)
-- [Architecture](/architecture.md)
+* **P**roduct Experience `#p`
+* **A**rchitecture & Technology `#a`
+* **C**ulture & Team `#c`
+* **T**ools of the trade `#t`
