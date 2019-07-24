@@ -72,19 +72,18 @@ const revision = require('child_process')
 .execSync('git rev-parse HEAD')
 .toString().trim()
 
-const gen_table_query = () => {
-    
+let existing_table_names = []
+
+const gen_create_table_query = (table_name, file_entries) => {
+    const schema = Object.keys(file_entries).map(key => `    ${key} text\n`)
+    const query = `CREATE TABLE IF NOT EXISTS ${table_name} (
+        path        text    PRIMARY KEY,
+    ${schema}
+    );`
+    return query;
 }
 
 const execQuery = (table_name, file_path, file_entries) => {
-    const create_table_query = `CREATE TABLE IF NOT EXISTS ${table_name} (
-        path        text    PRIMARY KEY,
-        title       text,
-        description text
-    );`;
-    client.query(create_table_query)
-        .catch(err => console.log(err))
-    
     const file_title = file_entries.title
     const file_description = file_entries.description
 
@@ -122,7 +121,18 @@ const traverseTree = () => octokit.git.getTree({
             console.log('the request url is: ', url)
             console.log('the title and description of this url is: ', content.tables[0].entries)
             console.log('the entire content block looks like: ', content)
-            content.tables.map(table => execQuery(table.name, path, table.entries))
+
+            content.tables.map(table => {
+                const table_name = table.name
+                if (!existing_table_names.includes(table_name)) {
+                    const create_table_query = gen_create_table_query(table_name, file_entries)
+                    console.log('create_table_query: ', create_table_query)
+                    client.query(create_table_query)
+                        .catch(err => console.log(err))
+                    existing_table_names.push(table_name)
+                }
+                execQuery(table_name, path, table.entries)
+            })
         })
     }
 }))
