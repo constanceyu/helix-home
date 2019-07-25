@@ -73,21 +73,45 @@ const revision = require('child_process')
 .toString().trim()
 
 let existing_table_names = []
+let current_columns = []
 
-const gen_create_table_query = (table_name, file_entries) => {
-    const schema = Object.keys(file_entries).map(key => `    ${key} text\n`)
-    const query = `CREATE TABLE IF NOT EXISTS ${table_name} (
-        path        text    PRIMARY KEY,
-    ${schema}
+const createDefaultTable = (table_name) => {
+    const create_table_query = `CREATE TABLE IF NOT EXISTS ${table_name} (
+        path        text    PRIMARY KEY
     );`
-    return query;
+    console.log(`Preparing to execute table default creation query ${create_table_query}`)
+    client.query(create_table_query)
+        .catch(err => console.log(err))
+    existing_table_names.push(table_name)
+    current_columns.push('path')
+}
+
+const updateColumns = (table_name, key) => {
+    const update_column_query = `ALTER TABLE ${table_name}
+        ADD COLUMN IF NOT EXISTS ${key} text;`
+    console.log(`Preparing to execute column insertion query ${update_column_query}`)
+    client.query(update_column_query)
+        .catch(err => console.log(err))
+    current_columns.push(key)
 }
 
 const execQuery = (table_name, file_path, file_entries) => {
-    const file_title = file_entries.title
-    const file_description = file_entries.description
-
-    const insert_data_query = `INSERT INTO ${table_name} (path, title, description) VALUES ('${file_path}', '${file_title}', '${file_description}');`;
+    Object.keys(file_entries).map(key => {
+        if (!current_columns.includes(key))
+            updateColumns(table_name, key)
+    })
+    const query_schema = current_columns.join(', ')
+    let current_values = []
+    for (let column of current_columns) {
+        console.log('column', column)
+        if (column === 'path') {
+            current_values.push(file_path)
+        } else {
+            current_values.push(file_entries[column] ? file_entries[column] : 'NULL')
+        }
+    }
+    const value_field = current_values .join('\', \'')
+    const insert_data_query = `INSERT INTO ${table_name} (${query_schema}) VALUES ('${value_field}');`;
     console.log(`Preparing to execute data insertion query ${insert_data_query}`)
     client.query(insert_data_query)
         .catch(err => {
@@ -111,7 +135,7 @@ const traverseTree = () => octokit.git.getTree({
     files.map(file => {
         const wrapper = {}
         const idx_html = file.path.replace('.md', '.idx.html')
-        wrapper[base_url.concat(idx_html)] = file.path
+        wrapper[base_url.concat(idx_html)] = `/${file.path}`
         return wrapper
     })
 ).then(urls => urls.map((url_object) => {
@@ -125,11 +149,7 @@ const traverseTree = () => octokit.git.getTree({
             content.tables.map(table => {
                 const table_name = table.name
                 if (!existing_table_names.includes(table_name)) {
-                    const create_table_query = gen_create_table_query(table_name, file_entries)
-                    console.log('create_table_query: ', create_table_query)
-                    client.query(create_table_query)
-                        .catch(err => console.log(err))
-                    existing_table_names.push(table_name)
+                    createDefaultTable(table_name)
                 }
                 execQuery(table_name, path, table.entries)
             })
