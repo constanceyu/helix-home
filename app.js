@@ -72,8 +72,7 @@ const revision = require('child_process')
 .execSync('git rev-parse HEAD')
 .toString().trim()
 
-let existing_table_names = []
-let current_columns = []
+let existing_table_names = {}
 
 const createDefaultTable = (table_name) => {
     const create_table_query = `CREATE TABLE IF NOT EXISTS ${table_name} (
@@ -82,8 +81,7 @@ const createDefaultTable = (table_name) => {
     console.log(`Preparing to execute table default creation query ${create_table_query}`)
     client.query(create_table_query)
         .catch(err => console.log(err))
-    existing_table_names.push(table_name)
-    current_columns.push('path')
+    existing_table_names[table_name] = ['path']
 }
 
 const updateTextColumns = (table_name, key) => {
@@ -92,10 +90,11 @@ const updateTextColumns = (table_name, key) => {
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
     client.query(update_column_query)
         .catch(err => console.log(err))
-    current_columns.push(key)
+    existing_table_names[table_name].push(key)
 }
 
 const execQuery = (table_name, file_path, file_entries) => {
+    let current_columns = existing_table_names[table_name]
     Object.keys(file_entries).map(key => {
         if (!current_columns.includes(key))
             updateTextColumns(table_name, key)
@@ -126,11 +125,11 @@ const updateJSONBColumn = (table_name) => {
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
     client.query(update_column_query)
         .catch(err => console.log(err))
-    current_columns.push(column_name)
+    existing_table_names[table_name].push(column_name)
 }
 
 const execJSONQuery = (table_name, path, entries) => {
-    if (!current_columns.includes('entries'))
+    if (!existing_table_names[table_name].includes('entries'))
         updateJSONBColumn(table_name)
     const stringified_entries = JSON.stringify(entries)
     const insert_data_query = `INSERT INTO ${table_name} (path, entries) VALUES ('${path}', '${stringified_entries}');`;
@@ -170,7 +169,8 @@ const traverseTree = () => octokit.git.getTree({
 
             content.tables.map(table => {
                 const table_name = table.name
-                if (!existing_table_names.includes(table_name)) {
+                console.log('existing table name',existing_table_names)
+                if (!(table_name in existing_table_names)) {
                     createDefaultTable(table_name)
                 }
                 // execQuery(table_name, path, table.entries)
