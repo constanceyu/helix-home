@@ -54,7 +54,7 @@ function pre(context) {
 
   var imgEl = document.querySelectorAll('img')
   if(imgEl) {
-    basic.entries['image']=imgEl.src
+    basic.entries['image']=imgEl
   }
 
   tables.push(simple);
