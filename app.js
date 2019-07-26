@@ -132,7 +132,8 @@ const execJSONQuery = (table_name, path, entries) => {
     if (!existing_table_names[table_name].includes('entries'))
         updateJSONBColumn(table_name)
     const stringified_entries = JSON.stringify(entries)
-    const insert_data_query = `INSERT INTO ${table_name} (path, entries) VALUES ('${path}', '${stringified_entries}');`;
+    const insert_data_query = `INSERT INTO ${table_name} (path, entries) VALUES ('${path}', '${stringified_entries}')
+        ON CONFLICT (path) DO UPDATE SET entries = EXCLUDED.entries;`;
     console.log(`Preparing to execute data insertion query ${insert_data_query}`)
     client.query(insert_data_query)
         .catch(err => {
