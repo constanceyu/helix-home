@@ -40,6 +40,7 @@ function pre(context) {
   // construct the tables
   var tables=[];
   var simple={name:'simple', entries: {}};
+  let basic={name: 'basic', entries: {}}
 
   var titleEl=document.querySelector('h1');
   if (titleEl) {
@@ -51,14 +52,25 @@ function pre(context) {
     simple.entries['description']=descEl.textContent;
   }
 
+  var imgEl = document.querySelectorAll('img')
+  if(imgEl) {
+    basic.entries['image']=imgEl.src
+  }
 
   tables.push(simple);
+  tables.push(basic)
   context.content.json={tables: tables};
 
   context.content.json.string=JSON.stringify(context.content.json);
 }
 
 module.exports.pre = pre;
+/**
+ * Override fetch step
+ */
 module.exports.before = {
-  fetch: preFetch,
-};
+  fetch: (context, action) => {
+    action.secrets = action.secrets || {};
+    action.secrets.HTTP_TIMEOUT = 5000;
+  }
+}
