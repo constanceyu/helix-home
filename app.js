@@ -86,7 +86,7 @@ const createDefaultTable = (table_name) => {
     current_columns.push('path')
 }
 
-const updateColumns = (table_name, key) => {
+const updateTextColumns = (table_name, key) => {
     const update_column_query = `ALTER TABLE ${table_name}
         ADD COLUMN IF NOT EXISTS ${key} text;`
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
@@ -98,7 +98,7 @@ const updateColumns = (table_name, key) => {
 const execQuery = (table_name, file_path, file_entries) => {
     Object.keys(file_entries).map(key => {
         if (!current_columns.includes(key))
-            updateColumns(table_name, key)
+            updateTextColumns(table_name, key)
     })
     const query_schema = current_columns.join(', ')
     let current_values = []
@@ -112,6 +112,28 @@ const execQuery = (table_name, file_path, file_entries) => {
     }
     const value_field = current_values .join('\', \'')
     const insert_data_query = `INSERT INTO ${table_name} (${query_schema}) VALUES ('${value_field}');`;
+    console.log(`Preparing to execute data insertion query ${insert_data_query}`)
+    client.query(insert_data_query)
+        .catch(err => {
+            console.log(`Error executing database query '${insert_data_query}': `, err)
+        })
+}
+
+const updateJSONBColumn = (table_name) => {
+    const column_name = 'entries'
+    const update_column_query = `ALTER TABLE ${table_name}
+        ADD COLUMN IF NOT EXISTS ${column_name} JSONB;`
+    console.log(`Preparing to execute column insertion query ${update_column_query}`)
+    client.query(update_column_query)
+        .catch(err => console.log(err))
+    current_columns.push(column_name)
+}
+
+const execJSONQuery = (table_name, path, entries) => {
+    if (!current_columns.includes('entries'))
+        updateJSONBColumn(table_name)
+    const stringified_entries = JSON.stringify(entries)
+    const insert_data_query = `INSERT INTO ${table_name} (path, entries) VALUES ('${path}', '${stringified_entries}');`;
     console.log(`Preparing to execute data insertion query ${insert_data_query}`)
     client.query(insert_data_query)
         .catch(err => {
@@ -151,7 +173,8 @@ const traverseTree = () => octokit.git.getTree({
                 if (!existing_table_names.includes(table_name)) {
                     createDefaultTable(table_name)
                 }
-                execQuery(table_name, path, table.entries)
+                // execQuery(table_name, path, table.entries)
+                execJSONQuery(table_name, path, table.entries)
             })
         })
     }
