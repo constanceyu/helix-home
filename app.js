@@ -75,7 +75,8 @@ const revision = require('child_process')
 let existing_table_names = {}
 
 const createDefaultTable = (table_name) => {
-    const create_table_query = `CREATE TABLE IF NOT EXISTS ${table_name} (
+    const create_table_query = `DROP TABLE IF EXISTS ${table_name};
+    CREATE TABLE IF NOT EXISTS ${table_name} (
         path        text    PRIMARY KEY
     );`
     console.log(`Preparing to execute table default creation query ${create_table_query}`)
@@ -102,11 +103,10 @@ const execQuery = (table_name, file_path, file_entries) => {
     const query_schema = current_columns.join(', ')
     let current_values = []
     for (let column of current_columns) {
-        console.log('column', column)
         if (column === 'path') {
             current_values.push(file_path)
         } else {
-            current_values.push(file_entries[column] ? file_entries[column] : 'NULL')
+            current_values.push(file_entries[column] ? JSON.stringify(file_entries[column]) : 'NULL')
         }
     }
     const value_field = current_values .join('\', \'')
