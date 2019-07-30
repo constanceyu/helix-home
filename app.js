@@ -75,7 +75,7 @@ const revision = require('child_process')
 let existing_table_names = {}
 
 const createDefaultTable = (table_name) => {
-    const create_table_query = `DROP TABLE IF EXISTS ${table_name};
+    const create_table_query = `DROP TABLE IF EXISTS ${table_name} CASCADE;
     CREATE TABLE IF NOT EXISTS ${table_name} (
         path        text    PRIMARY KEY
     );`
