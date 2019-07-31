@@ -7,7 +7,7 @@ module.exports = app => {
   app.log('Yay, the app was loaded!')
 
   app.on('push', async context => {
-    console.log(context)
+    app.log(context)
   })
 
   // For more information on building apps:
