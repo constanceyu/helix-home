@@ -41,5 +41,3 @@ To catch a glimpse of Helix, check out these video walkthoughs:
 ## Communication
 
 We hang out in the [`#helix-chat`](https://adobe.slack.com/messages/C9KD0TT6G/) Slack channel (Enterprise Grid) and notifications go to [`#helix-noisy`](https://adobe.slack.com/messages/C9HH8J553/)
-
-test
