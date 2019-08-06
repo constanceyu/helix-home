@@ -14,7 +14,7 @@ let args = minimist(process.argv.slice(2), {
         p: 'path',
     },
     default: {
-        o: 'adobe',
+        o: 'craeyu',
         r: 'helix-home',
         p: '',
     },
