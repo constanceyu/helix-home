@@ -72,33 +72,33 @@ const revision = require('child_process')
 .execSync('git rev-parse HEAD')
 .toString().trim()
 
-let existing_table_names = {}
+let existingTableNames = {}
 
-const createDefaultTable = (table_name) => {
-    const create_table_query = `DROP TABLE IF EXISTS ${table_name} CASCADE;
-    CREATE TABLE IF NOT EXISTS ${table_name} (
+const createDefaultTable = (tableName) => {
+    const create_table_query = `DROP TABLE IF EXISTS ${tableName} CASCADE;
+    CREATE TABLE IF NOT EXISTS ${tableName} (
         path        text    PRIMARY KEY
     );`
     console.log(`Preparing to execute table default creation query ${create_table_query}`)
     client.query(create_table_query)
         .catch(err => console.log(err))
-    existing_table_names[table_name] = ['path']
+    existingTableNames[tableName] = ['path']
 }
 
-const updateTextColumns = (table_name, key) => {
-    const update_column_query = `ALTER TABLE ${table_name}
+const updateTextColumns = (tableName, key) => {
+    const update_column_query = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${key} text;`
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
     client.query(update_column_query)
         .catch(err => console.log(err))
-    existing_table_names[table_name].push(key)
+    existingTableNames[tableName].push(key)
 }
 
-const execQuery = (table_name, file_path, file_entries) => {
-    let current_columns = existing_table_names[table_name]
+const execQuery = (tableName, file_path, file_entries) => {
+    let current_columns = existingTableNames[tableName]
     Object.keys(file_entries).map(key => {
         if (!current_columns.includes(key))
-            updateTextColumns(table_name, key)
+            updateTextColumns(tableName, key)
     })
     const query_schema = current_columns.join(', ')
     let current_values = []
@@ -110,7 +110,7 @@ const execQuery = (table_name, file_path, file_entries) => {
         }
     }
     const value_field = current_values .join('\', \'')
-    const insert_data_query = `INSERT INTO ${table_name} (${query_schema}) VALUES ('${value_field}');`;
+    const insert_data_query = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}');`;
     console.log(`Preparing to execute data insertion query ${insert_data_query}`)
     client.query(insert_data_query)
         .catch(err => {
@@ -118,21 +118,21 @@ const execQuery = (table_name, file_path, file_entries) => {
         })
 }
 
-const updateJSONBColumn = (table_name) => {
+const updateJSONBColumn = (tableName) => {
     const column_name = 'entries'
-    const update_column_query = `ALTER TABLE ${table_name}
+    const update_column_query = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${column_name} JSONB;`
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
     client.query(update_column_query)
         .catch(err => console.log(err))
-    existing_table_names[table_name].push(column_name)
+    existingTableNames[tableName].push(column_name)
 }
 
-const execJSONQuery = (table_name, path, entries) => {
-    if (!existing_table_names[table_name].includes('entries'))
-        updateJSONBColumn(table_name)
+const execJSONQuery = (tableName, path, entries) => {
+    if (!existingTableNames[tableName].includes('entries'))
+        updateJSONBColumn(tableName)
     const stringified_entries = JSON.stringify(entries)
-    const insert_data_query = `INSERT INTO ${table_name} (path, entries) VALUES ('${path}', '${stringified_entries}')
+    const insert_data_query = `INSERT INTO ${tableName} (path, entries) VALUES ('${path}', '${stringified_entries}')
         ON CONFLICT (path) DO UPDATE SET entries = EXCLUDED.entries;`;
     console.log(`Preparing to execute data insertion query ${insert_data_query}`)
     client.query(insert_data_query)
@@ -160,22 +160,22 @@ const traverseTree = () => octokit.git.getTree({
         wrapper[base_url.concat(idx_html)] = `/${file.path}`
         return wrapper
     })
-).then(urls => urls.map((url_object) => {
-    for (const [url, path] of Object.entries(url_object)) {
-        request({uri: url, json: true})
+).then(urls => urls.map((urlObject) => {
+    for (const [url, path] of Object.entries(urlObject)) {
+        request({ uri: url, json: true })
         .then(content => {
             console.log('the request url is: ', url)
             console.log('the title and description of this url is: ', content.tables[0].entries)
             console.log('the entire content block looks like: ', content)
 
             content.tables.map(table => {
-                const table_name = table.name
-                console.log('existing table name',existing_table_names)
-                if (!(table_name in existing_table_names)) {
-                    createDefaultTable(table_name)
+                const tableName = table.name
+                console.log('existing table name',existingTableNames)
+                if (!(tableName in existingTableNames)) {
+                    createDefaultTable(tableName)
                 }
-                // execQuery(table_name, path, table.entries)
-                execJSONQuery(table_name, path, table.entries)
+                // execQuery(tableName, path, table.entries)
+                execJSONQuery(tableName, path, table.entries)
             })
         })
     }
