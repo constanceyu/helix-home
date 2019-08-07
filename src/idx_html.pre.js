@@ -52,11 +52,12 @@ function pre(context) {
     simple.entries['description']=descEl.textContent;
   }
 
-  var imgEl = document.querySelectorAll('img')
-  if(imgEl) {
-    basic.entries['image']=imgEl
+  var imgElNode = document.querySelectorAll('img')
+  var imgs = []
+  for (var img of imgElNode) {
+    imgs.push(img.src)
   }
-
+  basic.entries = {...imgs}
   tables.push(simple);
   tables.push(basic)
   context.content.json={tables: tables};
