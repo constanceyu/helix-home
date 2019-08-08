@@ -75,12 +75,12 @@ const revision = require('child_process')
 let existingTableNames = {}
 
 const createDefaultTable = (tableName) => {
-    const create_table_query = `DROP TABLE IF EXISTS ${tableName} CASCADE;
+    const createTableQuery = `DROP TABLE IF EXISTS ${tableName} CASCADE;
     CREATE TABLE IF NOT EXISTS ${tableName} (
         path        text    PRIMARY KEY
     );`
-    console.log(`Preparing to execute table default creation query ${create_table_query}`)
-    client.query(create_table_query)
+    console.log(`Preparing to execute table default creation query ${createTableQuery}`)
+    client.query(createTableQuery)
         .catch(err => console.log(err))
     existingTableNames[tableName] = ['path']
 }
@@ -110,11 +110,11 @@ const execQuery = (tableName, file_path, file_entries) => {
         }
     }
     const value_field = current_values .join('\', \'')
-    const insert_data_query = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}');`;
-    console.log(`Preparing to execute data insertion query ${insert_data_query}`)
-    client.query(insert_data_query)
+    const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}');`;
+    console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
+    client.query(insertDataQuery)
         .catch(err => {
-            console.log(`Error executing database query '${insert_data_query}': `, err)
+            console.log(`Error executing database query '${insertDataQuery}': `, err)
         })
 }
 
@@ -131,13 +131,13 @@ const updateJSONBColumn = (tableName) => {
 const execJSONQuery = (tableName, path, entries) => {
     if (!existingTableNames[tableName].includes('entries'))
         updateJSONBColumn(tableName)
-    const stringified_entries = JSON.stringify(entries)
-    const insert_data_query = `INSERT INTO ${tableName} (path, entries) VALUES ('${path}', '${stringified_entries}')
+    const stringifiedEntries = JSON.stringify(entries)
+    const insertDataQuery = `INSERT INTO ${tableName} (path, entries) VALUES ('${path}', '${stringifiedEntries}')
         ON CONFLICT (path) DO UPDATE SET entries = EXCLUDED.entries;`;
-    console.log(`Preparing to execute data insertion query ${insert_data_query}`)
-    client.query(insert_data_query)
+    console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
+    client.query(insertDataQuery)
         .catch(err => {
-            console.log(`Error executing database query '${insert_data_query}': `, err)
+            console.log(`Error executing database query '${insertDataQuery}': `, err)
         })
 }
 
