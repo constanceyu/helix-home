@@ -1,5 +1,4 @@
 const jquery = require('jquery');
-const { preFetch } = require('./utils.js');
 
 /**
  * The 'pre' function that is executed before the HTML is rendered
@@ -39,27 +38,27 @@ function pre(context) {
 
   // construct the tables
   var tables=[];
-  var simple={name:'simple', entries: {}};
-  let basic={name: 'basic', entries: {}}
+  var basic={name:'basic', entries: {}};
+  let images={name: 'images', entries: {}};
 
   var titleEl=document.querySelector('h1');
   if (titleEl) {
-    simple.entries['title']=titleEl.textContent;
+    basic.entries['title']=titleEl.textContent;
   }
 
   var descEl=document.querySelector('.title .header p');
   if (descEl) {
-    simple.entries['description']=descEl.textContent;
+    basic.entries['description']=descEl.textContent;
   }
 
-  var imgElNode = document.querySelectorAll('img')
-  var imgs = []
+  var imgElNode = document.querySelectorAll('img');
+  var imgs = [];
   for (var img of imgElNode) {
-    imgs.push(img.src)
+    imgs.push(img.src);
   }
-  basic.entries = {...imgs}
-  tables.push(simple);
-  tables.push(basic)
+  images.entries = {...imgs};
+  tables.push(basic);
+  tables.push(images);
   context.content.json={tables: tables};
 
   context.content.json.string=JSON.stringify(context.content.json);
