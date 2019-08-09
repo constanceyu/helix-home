@@ -1,4 +1,17 @@
-const jquery = require('jquery');
+/*
+ * Copyright 2019 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
+
+/* eslint-disable import/no-unresolved */
+const htmlPre = require('./html.pre');
 
 /**
  * The 'pre' function that is executed before the HTML is rendered
@@ -7,59 +20,32 @@ const jquery = require('jquery');
  */
 function pre(context) {
   const { document } = context.content;
-  const $ = jquery(document.defaultView);
-
-  const $sections = $(document.body).children('div');
-
-  // first section has a starting image: add title class and wrap all subsequent items inside a div
-  $sections
-    .first()
-    .has('p:first-child>img')
-    .addClass('title')
-    .find(':nth-child(1n+2)')
-    .wrapAll('<div class="header"></div>');
-
-  // sections consisting of only one image
-  $sections
-    .filter('[data-hlx-types~="has-only-image"]')
-    .not('.title')
-    .addClass('image');
-
-  // sections without image and title class gets a default class
-  $sections
-    .not('.image')
-    .not('.title')
-    .addClass('default');
-
-  // if there are no sections wrap everything in a default div
-  if ($sections.length === 0) {
-    $(document.body).children().wrapAll('<div class="default"></div>');
-  }
+  htmlPre.pre(context);
 
   // construct the tables
-  var tables=[];
-  var basic={name:'basic', entries: {}};
-  let images={name: 'images', entries: {}};
+  let tables = [];
+  let basic = { name:'basic', entries: {} };
+  let images = { name: 'images', entries: {} };
 
-  var titleEl=document.querySelector('h1');
+  const titleEl = document.querySelector('h1');
   if (titleEl) {
-    basic.entries['title']=titleEl.textContent;
+    basic.entries.title = titleEl.textContent;
   }
 
-  var descEl=document.querySelector('.title .header p');
+  const descEl = document.querySelector('.title .header p');
   if (descEl) {
-    basic.entries['description']=descEl.textContent;
+    basic.entries.description = descEl.textContent;
   }
 
-  var imgElNode = document.querySelectorAll('img');
-  var imgs = [];
+  const imgElNode = document.querySelectorAll('img');
+  let imgs = [];
   for (var img of imgElNode) {
     imgs.push(img.src);
   }
-  images.entries = {...imgs};
+  images.entries = { ...imgs };
   tables.push(basic);
   tables.push(images);
-  context.content.json={tables: tables};
+  context.content.json = { tables: tables };
 
   context.content.json.string=JSON.stringify(context.content.json);
 }
