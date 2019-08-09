@@ -12,17 +12,20 @@ let args = minimist(process.argv.slice(2), {
         o: 'owner',
         r: 'repo',
         p: 'path',
+        j: 'json',
     },
     default: {
         o: 'craeyu',
         r: 'helix-home',
         p: '',
+        j: true,
     },
 });
 
 const owner = args['o'];
 const repo = args['r'];
 const path = args['p'];
+const json = args['j'];
 
 const http = require('http');
 const request = require("request-promise");
@@ -174,8 +177,12 @@ const traverseTree = () => octokit.git.getTree({
                 if (!(tableName in existingTableNames)) {
                     createDefaultTable(tableName)
                 }
-                // execQuery(tableName, path, table.entries)
-                execJSONQuery(tableName, path, table.entries)
+                console.log('json', json);
+                if (json === true) {
+                    execJSONQuery(tableName, path, table.entries)
+                } else {
+                    execQuery(tableName, path, table.entries)
+                }
             })
         })
     }
