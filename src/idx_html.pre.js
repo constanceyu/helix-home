@@ -23,9 +23,9 @@ function pre(context) {
   htmlPre.pre(context);
 
   // construct the tables
-  let tables = [];
-  let basic = { name:'basic', entries: {} };
-  let images = { name: 'images', entries: {} };
+  const tables = [];
+  const basic = { name: 'basic', entries: {} };
+  const images = { name: 'images', entries: {} };
 
   const titleEl = document.querySelector('h1');
   if (titleEl) {
@@ -39,15 +39,15 @@ function pre(context) {
 
   const imgElNode = document.querySelectorAll('img');
   let imgs = [];
-  for (var img of imgElNode) {
+  for (const img of imgElNode) {
     imgs.push(img.src);
   }
   images.entries = { ...imgs };
   tables.push(basic);
   tables.push(images);
-  context.content.json = { tables: tables };
+  context.content.json = { tables };
 
-  context.content.json.string=JSON.stringify(context.content.json);
+  context.content.json.string = JSON.stringify(context.content.json);
 }
 
 module.exports.pre = pre;
@@ -58,5 +58,5 @@ module.exports.before = {
   fetch: (context, action) => {
     action.secrets = action.secrets || {};
     action.secrets.HTTP_TIMEOUT = 5000;
-  }
-}
+  },
+};
