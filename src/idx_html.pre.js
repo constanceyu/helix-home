@@ -32,17 +32,15 @@ function pre(context) {
     basic.entries.title = titleEl.textContent;
   }
 
-  const descEl = document.querySelector('.title .header p');
-  if (descEl) {
-    basic.entries.description = descEl.textContent;
-  }
+  document.querySelector('.title .header p', (title) => {
+    basic.entries.description = title.textContent;
+  });
 
-  const imgElNode = document.querySelectorAll('img');
-  let imgs = [];
-  for (const img of imgElNode) {
+  const imgs = [];
+  document.querySelectorAll('img').forEach((img) => {
     imgs.push(img.src);
-  }
-  images.entries = { ...imgs };
+  });
+  images.entries = { images: imgs };
   tables.push(basic);
   tables.push(images);
   context.content.json = { tables };
