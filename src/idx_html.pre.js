@@ -32,9 +32,10 @@ function pre(context) {
     basic.entries.title = titleEl.textContent;
   }
 
-  document.querySelector('.title .header p', (title) => {
-    basic.entries.description = title.textContent;
-  });
+  const descEl = document.querySelector('.title .header p');
+  if (descEl) {
+    basic.entries.description = descEl.textContent;
+  }
 
   const imgs = [];
   document.querySelectorAll('img').forEach((img) => {
@@ -45,7 +46,7 @@ function pre(context) {
   tables.push(images);
   context.content.json = { tables };
 
-  context.content.json.string = JSON.stringify(context.content.json);
+  context.content.tables = JSON.stringify(tables);
 }
 
 module.exports.pre = pre;
