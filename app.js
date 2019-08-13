@@ -11,20 +11,17 @@ let args = minimist(process.argv.slice(2), {
     alias: {
         o: 'owner',
         r: 'repo',
-        p: 'path',
         j: 'json',
     },
     default: {
         o: 'craeyu',
         r: 'helix-home',
-        p: '',
         j: true,
     },
 });
 
 const owner = args['o'];
 const repo = args['r'];
-const path = args['p'];
 const json = args['j'];
 
 const http = require('http');
@@ -149,26 +146,19 @@ const traverseTree = () => octokit.git.getTree({
     repo: repo,
     tree_sha: revision,
     recursive: 1,
-}).then(response => {
-    if (path == '')
-        return response.data.tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md'))
-    else
-        // error prone if the directory path has the exact string bc using 'includes'
-        // e.g. if i only want hackathons/hack, this method gives me hackathons/ too
-        return response.data.tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md') && obj.path.includes(path))
-}).then(files => 
+}).then(response => response.data.tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')))
+.then(files => 
     files.map(file => {
         const wrapper = {}
         const idx_html = file.path.replace('.md', '.idx.html')
         wrapper[base_url.concat(idx_html)] = `/${file.path}`
         return wrapper
-    })
-).then(urls => urls.map((urlObject) => {
+    }))
+    .then(urls => urls.map((urlObject) => {
     for (const [url, path] of Object.entries(urlObject)) {
         request({ uri: url, json: true })
         .then(content => {
             console.log('the request url is: ', url)
-            console.log('the title and description of this url is: ', content.tables[0].entries)
             console.log('the entire content block looks like: ', content)
 
             content.tables.map(table => {
