@@ -41,13 +41,13 @@ async function main(context) {
     imgUrls.push(img.src);
   });
   images.entries = { images: imgUrls };
-  tables['basic'] = (basic);
-  tables['images'] = (images);
+  tables.basic = (basic);
+  tables.images = (images);
 
   return {
     response: {
       body: tables,
-    }
+    },
   };
 }
 
