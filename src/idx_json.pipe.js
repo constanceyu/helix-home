@@ -46,7 +46,7 @@ function paranoid(context, action) {
 
 const jsonpipe = (cont, context, action) => {
   action.logger = action.logger || log;
-  action.logger.log('debug', 'Constructing HTML Pipeline');
+  action.logger.log('debug', 'Constructing custom JSON Pipeline');
   const pipe = new Pipeline(action);
   const timer = timing();
   pipe

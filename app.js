@@ -150,7 +150,7 @@ const traverseTree = () => octokit.git.getTree({
 .then(files => 
     files.map(file => {
         const wrapper = {}
-        const idx_html = file.path.replace('.md', '.idx.html')
+        const idx_html = file.path.replace('.md', '.idx.json')
         wrapper[base_url.concat(idx_html)] = `/${file.path}`
         return wrapper
     }))
@@ -161,17 +161,16 @@ const traverseTree = () => octokit.git.getTree({
             console.log('the request url is: ', url)
             console.log('the entire content block looks like: ', content)
 
-            content.tables.map(table => {
-                const tableName = table.name
-                console.log('existing table name',existingTableNames)
-                if (!(tableName in existingTableNames)) {
-                    createDefaultTable(tableName)
+            Object.keys(content).map(key => {
+                const { entries } = content[key]
+                console.log('existing table name', existingTableNames)
+                if (!(key in existingTableNames)) {
+                    createDefaultTable(key)
                 }
-                console.log('json', json);
                 if (json === true) {
-                    execJSONQuery(tableName, path, table.entries)
+                    execJSONQuery(key, path, entries)
                 } else {
-                    execQuery(tableName, path, table.entries)
+                    execQuery(key, path, entries)
                 }
             })
         })

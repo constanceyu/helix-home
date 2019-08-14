@@ -11,24 +11,20 @@
  */
 
 /* eslint-disable import/no-unresolved */
-const jsonPre = require('./json.pre');
-
-console.log('hi', jsonPre);
+const htmlPre = require('./html.pre').pre;
 /**
  * The 'pre' function that is executed before the HTML is rendered
  * @param context The current context of processing pipeline
  * @param context.content The content
  */
 async function main(context) {
-  console.log('main');
+  await htmlPre(context);
   const { document } = context.content;
-  jsonPre.pre(context);
-  console.log('context is this blah', context)
 
   // construct the tables
   const tables = {};
-  const basic = { name: 'basic', entries: {} };
-  const images = { name: 'images', entries: {} };
+  const basic = { entries: {} };
+  const images = { entries: {} };
 
   const titleEl = document.querySelector('h1');
   if (titleEl) {
@@ -40,11 +36,11 @@ async function main(context) {
     basic.entries.description = descEl.textContent;
   }
 
-  const imgs = [];
+  const imgUrls = [];
   document.querySelectorAll('img').forEach((img) => {
-    imgs.push(img.src);
+    imgUrls.push(img.src);
   });
-  images.entries = { images: imgs };
+  images.entries = { images: imgUrls };
   tables['basic'] = (basic);
   tables['images'] = (images);
 
