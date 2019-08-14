@@ -16,7 +16,7 @@ let args = minimist(process.argv.slice(2), {
     default: {
         o: 'craeyu',
         r: 'helix-home',
-        j: true,
+        j: false,
     },
 });
 
