@@ -153,7 +153,7 @@ const execJSONQuery = (tableName, path, entries) => {
         })
 }
 
-const traverseTree = () => octokit.git.getTree({
+const traverseTree = async () => octokit.git.getTree({
     owner: owner,
     repo: repo,
     tree_sha: revision,
@@ -170,33 +170,93 @@ const traverseTree = () => octokit.git.getTree({
     for (const [url, path] of Object.entries(urlObject)) {
         request({ uri: url, json: true })
         .then(content => {
-            console.log('the request url is: ', url)
-            console.log('the entire content block looks like: ', content)
+            // console.log('the request url is: ', url)
+            // console.log('the entire content block looks like: ', content)
 
-            Object.keys(content).map(key => {
-                const { entries } = content[key]
-                console.log('existing table name', existingTableNames)
-                if (!(key in existingTableNames)) {
-                    createDefaultTable(key)
-                }
-                if (json === true) {
-                    execJSONQuery(key, path, entries)
-                } else {
-                    execQuery(key, path, entries)
-                }
-            })
+            // Object.keys(content).map(key => {
+            //     const { entries } = content[key]
+            //     console.log('existing table name', existingTableNames)
+            //     if (!(key in existingTableNames)) {
+            //         createDefaultTable(key)
+            //     }
+            //     if (json === true) {
+            //         execJSONQuery(key, path, entries)
+            //     } else {
+            //         execQuery(key, path, entries)
+            //     }
+            // })
         })
     }
-}))
+    }))
+
+// const temp = async () => {
+//     console.log('lalala i am random')
+//     return new Promise(resolve => {
+//         setTimeout(() => {
+//           resolve('resolved');
+//         }, 1);
+//       });
+// }
+
+// const wrapper =  async() => {
+//     const temp1 = await temp()
+//     console.log(temp1)
+//     return 'hello'
+// }
+
+const scanGithub = async () => octokit.git.getTree({
+    owner: owner,
+    repo: repo,
+    tree_sha: revision,
+    recursive: 1,
+})
+
+const processFiles = async (files) => 
+    files.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => {
+        const wrapper = {}
+        const idx_html = file.path.replace('.md', '.idx.json')
+        wrapper[base_url.concat(idx_html)] = `/${file.path}`
+        return wrapper
+    })
+
 
 server.listen(server_port, hostname, () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
     existingTableNames = {}
-    client.connect(err => {
+    client.connect(async (err) => {
         if (err) throw err;
         else {
             console.log('PostgresDB connected.')
-            traverseTree()
+            const { data : { tree }} = await scanGithub()
+            const processedFiles = await processFiles(tree)
+            console.log(processedFiles)
         }
     })
 });
+
+
+// let counter = 0;
+
+// async function requestAndUpdateTableTask(file) {
+//     // do stuff
+//     return new Promise((resolve) => {
+//         setTimeout(() => {
+//             console.log('done with file', file);
+//             resolve('result of ' + file);
+//         }, Math.random()*2000 + 500);
+//     });
+// }
+
+// async function update() {
+//     const files = [1,0,2,3,4,5,6,7,8,9];
+//     const tasks = files.map(async (file) => {
+//         return requestAndUpdateTableTask(file);
+//     })
+
+//     const results = await Promise.all(tasks);
+
+//     console.log('all done:', results);
+
+// }
+
+// update().then();
