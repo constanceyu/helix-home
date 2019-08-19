@@ -75,8 +75,7 @@ const revision = require('child_process')
 let existingTableNames = {}
 
 const createDefaultTable = (tableName) => {
-    const createTableQuery = `DROP TABLE IF EXISTS ${tableName} CASCADE;
-    CREATE TABLE IF NOT EXISTS ${tableName} (
+    const createTableQuery = `CREATE TABLE IF NOT EXISTS ${tableName} (
         path        text    PRIMARY KEY
     );`
     console.log(`Preparing to execute table default creation query ${createTableQuery}`)
@@ -92,6 +91,16 @@ const updateTextColumns = (tableName, key) => {
     client.query(update_column_query)
         .catch(err => console.log(err))
     existingTableNames[tableName].push(key)
+}
+
+const mergeKeyandValue = (keys) => {
+    const strs = []
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]
+        strs.push(`${key} = EXCLUDED.${key}`)
+    }
+    
+    return strs.join(', ')
 }
 
 const execQuery = (tableName, file_path, file_entries) => {
@@ -110,7 +119,10 @@ const execQuery = (tableName, file_path, file_entries) => {
         }
     }
     const value_field = current_values .join('\', \'')
-    const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}');`;
+    const on_conflict_field = mergeKeyandValue(current_columns)
+    console.log('on conflict field is', on_conflict_field)
+    const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}')
+    ON CONFLICT (path) DO UPDATE SET ${on_conflict_field};`;
     console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
     client.query(insertDataQuery)
         .catch(err => {
@@ -179,7 +191,7 @@ const traverseTree = () => octokit.git.getTree({
 
 server.listen(server_port, hostname, () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
-
+    existingTableNames = {}
     client.connect(err => {
         if (err) throw err;
         else {
