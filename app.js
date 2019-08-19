@@ -229,7 +229,25 @@ server.listen(server_port, hostname, () => {
             console.log('PostgresDB connected.')
             const { data : { tree }} = await scanGithub()
             const processedFiles = await processFiles(tree)
-            console.log(processedFiles)
+            processedFiles.map(async (urlToPath) => {
+                for (const [url, path] of Object.entries(urlToPath)) {
+                    console.log('the request url is: ', url)
+                    const content = await request({ uri: url, json: true })
+                    console.log('the entire content block looks like: ', content)
+                    Object.keys(content).map(key => {
+                        const { entries } = content[key]
+                        console.log('existing table name', existingTableNames)
+                        if (!(key in existingTableNames)) {
+                            createDefaultTable(key)
+                        }
+                        if (json === true) {
+                            execJSONQuery(key, path, entries)
+                        } else {
+                            execQuery(key, path, entries)
+                        }
+                    })
+                }
+            })
         }
     })
 });
