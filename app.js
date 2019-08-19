@@ -215,7 +215,7 @@ const processFiles = async (files) =>
     files.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => {
         const wrapper = {}
         const idx_html = file.path.replace('.md', '.idx.json')
-        wrapper[base_url.concat(idx_html)] = `/${file.path}`
+        wrapper[base_url.concat(idx_html)] = `/${owner}/${repo}/${file.path}`
         return wrapper
     })
 
