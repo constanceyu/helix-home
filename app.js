@@ -76,11 +76,14 @@ let existingTableNames = {}
 
 const createDefaultTable = (tableName) => {
     const createTableQuery = `CREATE TABLE IF NOT EXISTS ${tableName} (
-        path        text    PRIMARY KEY
+        path    text    PRIMARY KEY
     );`
     console.log(`Preparing to execute table default creation query ${createTableQuery}`)
-    client.query(createTableQuery)
-        .catch(err => console.log(err))
+    try {
+        client.query(createTableQuery)
+    } catch (err) {
+        console.log(err)
+    }
     existingTableNames[tableName] = ['path']
 }
 
@@ -88,8 +91,11 @@ const updateTextColumns = (tableName, key) => {
     const update_column_query = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${key} text;`
     console.log(`Preparing to execute column insertion query ${update_column_query}`)
-    client.query(update_column_query)
-        .catch(err => console.log(err))
+    try {
+        client.query(update_column_query)
+    } catch (err) {
+        console.log(err)
+    }
     existingTableNames[tableName].push(key)
 }
 
@@ -99,7 +105,6 @@ const mergeKeyandValue = (keys) => {
         const key = keys[i]
         strs.push(`${key} = EXCLUDED.${key}`)
     }
-    
     return strs.join(', ')
 }
 
@@ -153,57 +158,6 @@ const execJSONQuery = (tableName, path, entries) => {
         })
 }
 
-const traverseTree = async () => octokit.git.getTree({
-    owner: owner,
-    repo: repo,
-    tree_sha: revision,
-    recursive: 1,
-}).then(response => response.data.tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')))
-.then(files => 
-    files.map(file => {
-        const wrapper = {}
-        const idx_html = file.path.replace('.md', '.idx.json')
-        wrapper[base_url.concat(idx_html)] = `/${file.path}`
-        return wrapper
-    }))
-    .then(urls => urls.map((urlObject) => {
-    for (const [url, path] of Object.entries(urlObject)) {
-        request({ uri: url, json: true })
-        .then(content => {
-            // console.log('the request url is: ', url)
-            // console.log('the entire content block looks like: ', content)
-
-            // Object.keys(content).map(key => {
-            //     const { entries } = content[key]
-            //     console.log('existing table name', existingTableNames)
-            //     if (!(key in existingTableNames)) {
-            //         createDefaultTable(key)
-            //     }
-            //     if (json === true) {
-            //         execJSONQuery(key, path, entries)
-            //     } else {
-            //         execQuery(key, path, entries)
-            //     }
-            // })
-        })
-    }
-    }))
-
-// const temp = async () => {
-//     console.log('lalala i am random')
-//     return new Promise(resolve => {
-//         setTimeout(() => {
-//           resolve('resolved');
-//         }, 1);
-//       });
-// }
-
-// const wrapper =  async() => {
-//     const temp1 = await temp()
-//     console.log(temp1)
-//     return 'hello'
-// }
-
 const scanGithub = async () => octokit.git.getTree({
     owner: owner,
     repo: repo,
@@ -211,70 +165,34 @@ const scanGithub = async () => octokit.git.getTree({
     recursive: 1,
 })
 
-const processFiles = async (files) => 
-    files.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => {
-        const wrapper = {}
-        const idx_html = file.path.replace('.md', '.idx.json')
-        wrapper[base_url.concat(idx_html)] = `/${owner}/${repo}/${file.path}`
-        return wrapper
-    })
-
-
-server.listen(server_port, hostname, () => {
+server.listen(server_port, hostname, async () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
     existingTableNames = {}
-    client.connect(async (err) => {
+    await client.connect((err) => {
         if (err) throw err;
         else {
             console.log('PostgresDB connected.')
-            const { data : { tree }} = await scanGithub()
-            const processedFiles = await processFiles(tree)
-            processedFiles.map(async (urlToPath) => {
-                for (const [url, path] of Object.entries(urlToPath)) {
-                    console.log('the request url is: ', url)
-                    const content = await request({ uri: url, json: true })
-                    console.log('the entire content block looks like: ', content)
-                    Object.keys(content).map(key => {
-                        const { entries } = content[key]
-                        console.log('existing table name', existingTableNames)
-                        if (!(key in existingTableNames)) {
-                            createDefaultTable(key)
-                        }
-                        if (json === true) {
-                            execJSONQuery(key, path, entries)
-                        } else {
-                            execQuery(key, path, entries)
-                        }
-                    })
-                }
-            })
         }
     })
+    const { data : { tree }} = await scanGithub()
+    const file_paths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path)
+    let promises = []
+    file_paths.map(file_path => promises.push(request({uri: base_url.concat(file_path.replace('.md', '.idx.json')), json: true})))
+    const results = await Promise.all(promises)
+    for (let i = 0; i < results.length; ++i) {
+        const content = results[i]
+        const path = `/${owner}/${repo}/${file_paths[i]}`
+        Object.keys(content).map(table_name => {
+            const { entries } = content[table_name]
+            console.log('existing table name', existingTableNames)
+            if (!(table_name in existingTableNames)) {
+                createDefaultTable(table_name)
+            }
+            if (json === true) {
+                execJSONQuery(table_name, path, entries)
+            } else {
+                execQuery(table_name, path, entries)
+            }
+        })
+    }
 });
-
-
-// let counter = 0;
-
-// async function requestAndUpdateTableTask(file) {
-//     // do stuff
-//     return new Promise((resolve) => {
-//         setTimeout(() => {
-//             console.log('done with file', file);
-//             resolve('result of ' + file);
-//         }, Math.random()*2000 + 500);
-//     });
-// }
-
-// async function update() {
-//     const files = [1,0,2,3,4,5,6,7,8,9];
-//     const tasks = files.map(async (file) => {
-//         return requestAndUpdateTableTask(file);
-//     })
-
-//     const results = await Promise.all(tasks);
-
-//     console.log('all done:', results);
-
-// }
-
-// update().then();
