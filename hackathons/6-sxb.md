@@ -36,7 +36,7 @@ Although this is a hackathon, we won't be hacking all the time, there will also 
 | --------: | -------------- | -------------------------------- | ----------- | ----------- | --------- |
 |   Morning | -              | Helix Introduction & Demo Format | Documentathon | Programming | Demos     |
 | Afternoon | Airport Transfer & Arrival       | Coding                           | Coding      | Documentathon     | Departure & Airport Transfer |
-|   Evening | Set-up, drinks | Hacking                          | Team dinner | Hacking     | -         |
+|   Evening | Set-up, drinks | Hacking                          | Team dinner - 7pm30 [L'Eveil des Sens](https://www.tripadvisor.com/Restaurant_Review-g187075-d792726-Reviews-L_Eveil_des_Sens-Strasbourg_Bas_Rhin_Grand_Est.html) - [map](https://goo.gl/maps/RwGFAifHDnmvBFr89) | Hacking     | -         |
 
 ### Lodging
 
@@ -50,23 +50,25 @@ Recommended hotels:
 > What are you planning to show at the end of the week?
 
 * on-call poc: debrief the 3-months trial, gather on-callees' feedback and define next steps (improve / change / do differently...)
+* performathon? https://github.com/adobe/helix-cli/issues/935
+* helix-content API? https://github.com/adobe/helix-pipeline/issues/292
+* Write integration tests for helix-pages (mainly tests on production): https://github.com/adobe/helix-pages/issues/8
 
 ### Attendees
 
 > Who is going to be there? Can I come?
 
 1. @acapt
-2. @simonwex
-3. @trieloff
-4. @rofe (from Tuesday 10 AM)
-5. @koraa
-6. <del>@kgera</del> (Remote)
-7. @weilmic
-8. @MarquiseRosier
-9. @bdelacretaz (Tuesday-Thursday)
-10. @stefan-guggisberg (Tuesday-Thursday)
-11. @kamendola?
-99. <del>@tripodsan</del> (partially remote)
+1. @simonwex
+1. @trieloff
+1. @rofe (from Tuesday 10 AM)
+1. @koraa
+1. @weilmic
+1. @bdelacretaz (Tuesday-Thursday)
+1. @stefan-guggisberg (Tuesday-Thursday)
+1. @kamendola
+1. <del>@kgera</del> (Remote)
+1. <del>@tripodsan</del> (partially remote)
 
 
 We have room for 16 people. First come, first served :)
