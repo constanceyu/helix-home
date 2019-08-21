@@ -25,7 +25,7 @@ const repo = args['r'];
 const json = args['j'];
 
 const http = require('http');
-const request = require("request-promise");
+const request = require("request-promise-native");
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -108,7 +108,7 @@ const mergeKeyandValue = (keys) => {
     return strs.join(', ')
 }
 
-const execQuery = (tableName, file_path, file_entries) => {
+const execQuery = (tableName, filePath, file_entries) => {
     let current_columns = existingTableNames[tableName]
     Object.keys(file_entries).map(key => {
         if (!current_columns.includes(key))
@@ -118,7 +118,7 @@ const execQuery = (tableName, file_path, file_entries) => {
     let current_values = []
     for (let column of current_columns) {
         if (column === 'path') {
-            current_values.push(file_path)
+            current_values.push(filePath)
         } else {
             current_values.push(file_entries[column] ? JSON.stringify(file_entries[column]) : 'NULL')
         }
@@ -175,23 +175,23 @@ server.listen(server_port, hostname, async () => {
         }
     })
     const { data : { tree }} = await scanGithub()
-    const file_paths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path)
+    const filePaths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path)
     let promises = []
-    file_paths.map(file_path => promises.push(request({uri: base_url.concat(file_path.replace('.md', '.idx.json')), json: true})))
+    filePaths.map(filePath => promises.push(request({uri: base_url.concat(filePath.replace('.md', '.idx.json')), json: true})))
     const results = await Promise.all(promises)
     for (let i = 0; i < results.length; ++i) {
         const content = results[i]
-        const path = `/${owner}/${repo}/${file_paths[i]}`
-        Object.keys(content).map(table_name => {
-            const { entries } = content[table_name]
+        const path = `/${owner}/${repo}/${filePaths[i]}`
+        Object.keys(content).map(tableName => {
+            const { entries } = content[tableName]
             console.log('existing table name', existingTableNames)
-            if (!(table_name in existingTableNames)) {
-                createDefaultTable(table_name)
+            if (!(tableName in existingTableNames)) {
+                createDefaultTable(tableName)
             }
             if (json === true) {
-                execJSONQuery(table_name, path, entries)
+                execJSONQuery(tableName, path, entries)
             } else {
-                execQuery(table_name, path, entries)
+                execQuery(tableName, path, entries)
             }
         })
     }
