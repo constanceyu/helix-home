@@ -82,7 +82,7 @@ const createDefaultTable = (tableName) => {
     try {
         client.query(createTableQuery)
     } catch (err) {
-        console.log(err)
+        throw err
     }
     existingTableNames[tableName] = ['path']
 }
@@ -94,7 +94,7 @@ const updateTextColumns = (tableName, key) => {
     try {
         client.query(update_column_query)
     } catch (err) {
-        console.log(err)
+        throw err
     }
     existingTableNames[tableName].push(key)
 }
@@ -111,23 +111,28 @@ const mergeKeyandValue = (keys) => {
 const execQuery = (tableName, filePath, file_entries) => {
     let current_columns = existingTableNames[tableName]
     Object.keys(file_entries).map(key => {
-        if (!current_columns.includes(key))
-            updateTextColumns(tableName, key)
+        if (!current_columns.includes(key)) {
+            try {
+                updateTextColumns(tableName, key)
+            } catch (err) {
+                console.err(err)
+            }
+        }
     })
     const query_schema = current_columns.join(', ')
-    let current_values = []
+    let currentValues = []
     for (let column of current_columns) {
         if (column === 'path') {
-            current_values.push(filePath)
+            currentValues.push(filePath)
         } else {
-            current_values.push(file_entries[column] ? JSON.stringify(file_entries[column]) : 'NULL')
+            currentValues.push(file_entries[column] ? JSON.stringify(file_entries[column]) : 'NULL')
         }
     }
-    const value_field = current_values .join('\', \'')
-    const on_conflict_field = mergeKeyandValue(current_columns)
-    console.log('on conflict field is', on_conflict_field)
-    const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${value_field}')
-    ON CONFLICT (path) DO UPDATE SET ${on_conflict_field};`;
+    const valueField = currentValues .join('\', \'')
+    const onConflictField = mergeKeyandValue(current_columns)
+    console.log('on conflict field is', onConflictField)
+    const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${valueField}')
+    ON CONFLICT (path) DO UPDATE SET ${onConflictField};`;
     console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
     client.query(insertDataQuery)
         .catch(err => {
@@ -168,7 +173,7 @@ const scanGithub = async () => octokit.git.getTree({
 server.listen(server_port, hostname, async () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
     existingTableNames = {}
-    await client.connect((err) => {
+    client.connect((err) => {
         if (err) throw err;
         else {
             console.log('PostgresDB connected.')
@@ -186,7 +191,11 @@ server.listen(server_port, hostname, async () => {
             const { entries } = content[tableName]
             console.log('existing table name', existingTableNames)
             if (!(tableName in existingTableNames)) {
-                createDefaultTable(tableName)
+                try {
+                    createDefaultTable(tableName)
+                } catch (err) {
+                    console.err(err)
+                }
             }
             if (json === true) {
                 execJSONQuery(tableName, path, entries)
