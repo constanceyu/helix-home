@@ -74,32 +74,33 @@ const revision = require('child_process')
 
 let existingTableNames = {}
 
-const createDefaultTable = (tableName) => {
+const createDefaultTable = async (tableName) => {
     const createTableQuery = `CREATE TABLE IF NOT EXISTS ${tableName} (
         path    text    PRIMARY KEY
     );`
     console.log(`Preparing to execute table default creation query ${createTableQuery}`)
     try {
-        client.query(createTableQuery)
+        existingTableNames[tableName] = ['path']
+        await client.query(createTableQuery)
     } catch (err) {
         throw err
     }
-    existingTableNames[tableName] = ['path']
 }
 
-const updateTextColumns = (tableName, key) => {
-    const update_column_query = `ALTER TABLE ${tableName}
+const updateTextColumns = async (tableName, key) => {
+    const updateColumnQuery = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${key} text;`
-    console.log(`Preparing to execute column insertion query ${update_column_query}`)
+    console.log(`Preparing to execute column insertion query ${updateColumnQuery}`)
     try {
-        client.query(update_column_query)
+        existingTableNames[tableName].push(key)
+        await client.query(updateColumnQuery)
     } catch (err) {
+        console.error(`Error executing column update query '${insertDataQuery}': `, err)
         throw err
     }
-    existingTableNames[tableName].push(key)
 }
 
-const mergeKeyandValue = (keys) => {
+const mergeKeyandValue = async (keys) => {
     const strs = []
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i]
@@ -108,14 +109,14 @@ const mergeKeyandValue = (keys) => {
     return strs.join(', ')
 }
 
-const execQuery = (tableName, filePath, file_entries) => {
+const execQuery = async (tableName, filePath, file_entries) => {
     let current_columns = existingTableNames[tableName]
     Object.keys(file_entries).map(key => {
         if (!current_columns.includes(key)) {
             try {
                 updateTextColumns(tableName, key)
             } catch (err) {
-                console.err(err)
+                throw err;
             }
         }
     })
@@ -129,23 +130,24 @@ const execQuery = (tableName, filePath, file_entries) => {
         }
     }
     const valueField = currentValues .join('\', \'')
-    const onConflictField = mergeKeyandValue(current_columns)
-    console.log('on conflict field is', onConflictField)
+    const onConflictField = await mergeKeyandValue(current_columns)
     const insertDataQuery = `INSERT INTO ${tableName} (${query_schema}) VALUES ('${valueField}')
     ON CONFLICT (path) DO UPDATE SET ${onConflictField};`;
     console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
-    client.query(insertDataQuery)
-        .catch(err => {
-            console.log(`Error executing database query '${insertDataQuery}': `, err)
-        })
+    try {
+        await client.query(insertDataQuery)
+    } catch (err) {
+        console.error(`Error executing database query '${insertDataQuery}': `, err)
+        throw err;
+    }
 }
 
 const updateJSONBColumn = (tableName) => {
     const column_name = 'entries'
-    const update_column_query = `ALTER TABLE ${tableName}
+    const updateColumnQuery = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${column_name} JSONB;`
-    console.log(`Preparing to execute column insertion query ${update_column_query}`)
-    client.query(update_column_query)
+    console.log(`Preparing to execute column insertion query ${updateColumnQuery}`)
+    client.query(updateColumnQuery)
         .catch(err => console.log(err))
     existingTableNames[tableName].push(column_name)
 }
