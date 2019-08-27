@@ -180,11 +180,12 @@ server.listen(server_port, hostname, async () => {
         console.log('PostgresDB connected.');
     } catch (err) {
         console.err(err);
-        return;
+        process.exit(1);
     }
     const { data : { tree }} = await scanGithub();
     if (tree.length === 0) {
-        return;
+        console.err('Error in fetching content directories via Github API');
+        process.exit(1);
     }
 
     const filePaths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path);
@@ -194,7 +195,7 @@ server.listen(server_port, hostname, async () => {
         results = await Promise.all(promises);
     } catch (err) {
         console.error('Error in waiting for all content querying promises from pipeline to resolve', err);
-        return;
+        process.exit(1);
     }
 
     const missingTableNames = new Set();
@@ -209,7 +210,7 @@ server.listen(server_port, hostname, async () => {
         await Promise.all(Array.from(missingTableNames).map(createDefaultTable));
     } catch (err) {
         console.error(err);
-        return;
+        process.exit(1);
     }
 
     // for (let i = 0; i < results.length; ++i) {
