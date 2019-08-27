@@ -188,26 +188,47 @@ server.listen(server_port, hostname, async () => {
     }
 
     const filePaths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path);
-    let promises = filePaths.map(filePath => request({uri: base_url.concat(filePath.replace('.md', '.idx.json')), json: true}));
-    const results = await Promise.all(promises)
-    for (let i = 0; i < results.length; ++i) {
-        const content = results[i]
-        const path = `/${owner}/${repo}/${filePaths[i]}`
-        Object.keys(content).map(tableName => {
-            const { entries } = content[tableName]
-            console.log('existing table name', existingTableNames)
-            if (!(tableName in existingTableNames)) {
-                try {
-                    createDefaultTable(tableName)
-                } catch (err) {
-                    console.err(err)
-                }
-            }
-            if (json === true) {
-                execJSONQuery(tableName, path, entries)
-            } else {
-                execQuery(tableName, path, entries)
-            }
-        })
+    const promises = filePaths.map(filePath => request({uri: base_url.concat(filePath.replace('.md', '.idx.json')), json: true}));
+    let results = [];
+    try {
+        results = await Promise.all(promises);
+    } catch (err) {
+        console.error('Error in waiting for all content querying promises from pipeline to resolve', err);
+        return;
     }
+
+    const missingTableNames = new Set();
+    for (const content of results) {
+        Object.keys(content).forEach((tableName) => {
+            if (!(tableName in existingTableNames)) {
+                missingTableNames.add(tableName);
+            }
+        });
+    }
+    try {
+        await Promise.all(Array.from(missingTableNames).map(createDefaultTable));
+    } catch (err) {
+        console.error(err);
+        return;
+    }
+
+    // for (let i = 0; i < results.length; ++i) {
+    //     const content = results[i]
+    //     const path = `/${owner}/${repo}/${filePaths[i]}`
+    //     Object.keys(content).map(tableName => {
+    //         const { entries } = content[tableName]
+    //         if (!(tableName in existingTableNames)) {
+    //             try {
+    //                 createDefaultTable(tableName)
+    //             } catch (err) {
+    //                 console.err(err)
+    //             }
+    //         }
+    //         if (json === true) {
+    //             execJSONQuery(tableName, path, entries)
+    //         } else {
+    //             execQuery(tableName, path, entries)
+    //         }
+    //     })
+    // }
 });
