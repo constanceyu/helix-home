@@ -1,0 +1,15 @@
+#
+# helix configuration for local development
+#
+version: 1
+
+definitions:
+  defaults:
+    - &defaultRepo "https://github.com/craeyu/helix-home.git"
+
+strains:
+  - name: default
+    code: https://github.com/craeyu/helix-home.git#master
+    content: https://github.com/craeyu/helix-home.git#master
+    static: https://github.com/craeyu/helix-home.git/htdocs#master
+    package: conyu/github-com--craeyu--helix-home--master-dirty

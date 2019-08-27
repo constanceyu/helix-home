@@ -1,0 +1,29 @@
+{
+  "name": "helix-home",
+  "version": "1.0.0",
+  "description": "![helix bridge](robynne-292082-unsplash.jpg)",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/craeyu/helix-home.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/craeyu/helix-home/issues"
+  },
+  "homepage": "https://github.com/craeyu/helix-home#readme",
+  "dependencies": {
+    "request-promise-native": "^1.0.7"
+  },
+  "devDependencies": {
+    "pg": "^7.12.1"
+  }
+}
