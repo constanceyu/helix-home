@@ -175,16 +175,20 @@ const scanGithub = async () => octokit.git.getTree({
 server.listen(server_port, hostname, async () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
     existingTableNames = {}
-    client.connect((err) => {
-        if (err) throw err;
-        else {
-            console.log('PostgresDB connected.')
-        }
-    })
-    const { data : { tree }} = await scanGithub()
-    const filePaths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path)
-    let promises = []
-    filePaths.map(filePath => promises.push(request({uri: base_url.concat(filePath.replace('.md', '.idx.json')), json: true})))
+    try {
+        await client.connect();
+        console.log('PostgresDB connected.');
+    } catch (err) {
+        console.err(err);
+        return;
+    }
+    const { data : { tree }} = await scanGithub();
+    if (tree.length === 0) {
+        return;
+    }
+
+    const filePaths = tree.filter(obj => obj.type === 'blob' && !obj.path.startsWith('.github') && obj.path.endsWith('.md')).map(file => file.path);
+    let promises = filePaths.map(filePath => request({uri: base_url.concat(filePath.replace('.md', '.idx.json')), json: true}));
     const results = await Promise.all(promises)
     for (let i = 0; i < results.length; ++i) {
         const content = results[i]
