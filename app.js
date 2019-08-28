@@ -16,7 +16,7 @@ let args = minimist(process.argv.slice(2), {
     default: {
         o: 'craeyu',
         r: 'helix-home',
-        j: false,
+        j: true,
     },
 });
 
@@ -109,9 +109,9 @@ const mergeKeyandValue = async (keys) => {
     return strs.join(', ')
 }
 
-const execQuery = async (tableName, filePath, file_entries) => {
+const insertIndexEntries = async (tableName, path, entries) => {
     let current_columns = existingTableNames[tableName]
-    Object.keys(file_entries).map(key => {
+    Object.keys(entries).map(key => {
         if (!current_columns.includes(key)) {
             try {
                 updateTextColumns(tableName, key)
@@ -124,9 +124,9 @@ const execQuery = async (tableName, filePath, file_entries) => {
     let currentValues = []
     for (let column of current_columns) {
         if (column === 'path') {
-            currentValues.push(filePath)
+            currentValues.push(path)
         } else {
-            currentValues.push(file_entries[column] ? JSON.stringify(file_entries[column]) : 'NULL')
+            currentValues.push(entries[column] ? JSON.stringify(entries[column]) : 'NULL')
         }
     }
     const valueField = currentValues .join('\', \'')
@@ -135,34 +135,40 @@ const execQuery = async (tableName, filePath, file_entries) => {
     ON CONFLICT (path) DO UPDATE SET ${onConflictField};`;
     console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
     try {
-        await client.query(insertDataQuery)
+        await client.query(insertDataQuery);
     } catch (err) {
-        console.error(`Error executing database query '${insertDataQuery}': `, err)
+        console.error(`Error executing database query '${insertDataQuery}': `, err);
         throw err;
     }
 }
 
-const updateJSONBColumn = (tableName) => {
+const updateJSONBColumn = async (tableName) => {
     const column_name = 'entries'
     const updateColumnQuery = `ALTER TABLE ${tableName}
         ADD COLUMN IF NOT EXISTS ${column_name} JSONB;`
     console.log(`Preparing to execute column insertion query ${updateColumnQuery}`)
-    client.query(updateColumnQuery)
-        .catch(err => console.log(err))
-    existingTableNames[tableName].push(column_name)
+    try {
+        existingTableNames[tableName].push(column_name);
+        await client.query(updateColumnQuery);
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
 }
 
-const execJSONQuery = (tableName, path, entries) => {
+const execJSONQuery = async (tableName, path, entries) => {
     if (!existingTableNames[tableName].includes('entries'))
-        updateJSONBColumn(tableName)
+        updateJSONBColumn(tableName);
     const stringifiedEntries = JSON.stringify(entries)
     const insertDataQuery = `INSERT INTO ${tableName} (path, entries) VALUES ('${path}', '${stringifiedEntries}')
         ON CONFLICT (path) DO UPDATE SET entries = EXCLUDED.entries;`;
-    console.log(`Preparing to execute data insertion query ${insertDataQuery}`)
-    client.query(insertDataQuery)
-        .catch(err => {
-            console.log(`Error executing database query '${insertDataQuery}': `, err)
-        })
+    console.log(`Preparing to execute data insertion query ${insertDataQuery}`);
+    try {
+        return client.query(insertDataQuery);
+    } catch (err) {
+        console.error(`Error executing database query '${insertDataQuery}': `, err);
+        throw err;
+    }
 }
 
 const scanGithub = async () => octokit.git.getTree({
@@ -172,6 +178,17 @@ const scanGithub = async () => octokit.git.getTree({
     recursive: 1,
 })
 
+const updateDatabase = async (content, path) => 
+    Promise.all(Object.keys(content).map( async (tableName) => {
+        const { entries } = content[tableName];
+        try {
+            return json ? execJSONQuery(tableName, path, entries) : insertIndexEntries(tableName, path, entries);
+        } catch (err) {
+            console.error(err);
+            return Promise.resolve();
+        }
+    }));
+
 server.listen(server_port, hostname, async () => {
     console.log(`Server running at http://${hostname}:${server_port}/`);
     existingTableNames = {}
@@ -179,12 +196,12 @@ server.listen(server_port, hostname, async () => {
         await client.connect();
         console.log('PostgresDB connected.');
     } catch (err) {
-        console.err(err);
+        console.error(err);
         process.exit(1);
     }
     const { data : { tree }} = await scanGithub();
     if (tree.length === 0) {
-        console.err('Error in fetching content directories via Github API');
+        console.error('Error in fetching content directories via Github API');
         process.exit(1);
     }
 
@@ -213,23 +230,17 @@ server.listen(server_port, hostname, async () => {
         process.exit(1);
     }
 
-    // for (let i = 0; i < results.length; ++i) {
-    //     const content = results[i]
-    //     const path = `/${owner}/${repo}/${filePaths[i]}`
-    //     Object.keys(content).map(tableName => {
-    //         const { entries } = content[tableName]
-    //         if (!(tableName in existingTableNames)) {
-    //             try {
-    //                 createDefaultTable(tableName)
-    //             } catch (err) {
-    //                 console.err(err)
-    //             }
-    //         }
-    //         if (json === true) {
-    //             execJSONQuery(tableName, path, entries)
-    //         } else {
-    //             execQuery(tableName, path, entries)
-    //         }
-    //     })
-    // }
+    const insertDataTasks = [];
+    for (let i = 0; i < results.length; i += 1) {
+        const content = results[i];
+        const path = `/${owner}/${repo}/${filePaths[i]}`;
+        insertDataTasks.push(updateDatabase(content, path));
+    }
+    try {
+        await Promise.all(insertDataTasks);
+    } catch (err) {
+        console.error(err);
+    }
+
+    process.exit(0);
 });
