@@ -24,7 +24,6 @@ const owner = args['o'];
 const repo = args['r'];
 const json = args['j'];
 
-const http = require('http');
 const request = require("request-promise-native");
 const dotenv = require('dotenv');
 dotenv.config();
@@ -56,15 +55,6 @@ const config = {
     ssl: true
 };
 const client = new pg.Client(config);
-
-const hostname = '127.0.0.1';
-const server_port = 3001;
-
-const server = http.createServer((req, res) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    res.end('Hello World\n');
-});
 
 const base_url =  `http://localhost:3000/`;
 
@@ -189,8 +179,7 @@ const updateDatabase = async (content, path) =>
         }
     }));
 
-server.listen(server_port, hostname, async () => {
-    console.log(`Server running at http://${hostname}:${server_port}/`);
+const main = async () => {
     existingTableNames = {}
     try {
         await client.connect();
@@ -243,4 +232,6 @@ server.listen(server_port, hostname, async () => {
     }
 
     process.exit(0);
-});
+}
+
+main();
