@@ -222,7 +222,8 @@ const main = async () => {
     const insertDataTasks = [];
     for (let i = 0; i < results.length; i += 1) {
         const content = results[i];
-        const path = `/${owner}/${repo}/${filePaths[i]}`;
+        const fileHtml = filePaths[i].replace('.md', '.idx.json');
+        const path = `/${owner}/${repo}/${fileHtml}`;
         insertDataTasks.push(updateDatabase(content, path));
     }
     try {
