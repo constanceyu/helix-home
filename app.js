@@ -222,8 +222,9 @@ const main = async () => {
     const insertDataTasks = [];
     for (let i = 0; i < results.length; i += 1) {
         const content = results[i];
-        const fileHtml = filePaths[i].replace('.md', '.idx.json');
-        const path = `/${owner}/${repo}/${fileHtml}`;
+        // the replaced '.md' should to be the last three characters of the file path
+        const pathHtml = filePaths[i].replace(/.md$/, '.idx.json');
+        const path = `/${owner}/${repo}/${pathHtml}`;
         insertDataTasks.push(updateDatabase(content, path));
     }
     try {
