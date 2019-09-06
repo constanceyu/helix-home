@@ -14,7 +14,7 @@ let args = minimist(process.argv.slice(2), {
         j: 'json',
     },
     default: {
-        o: 'craeyu',
+        o: 'constanceyu',
         r: 'helix-home',
         j: false,
     },
